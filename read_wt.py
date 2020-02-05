@@ -40,7 +40,6 @@ def read_WT_hist_file(file_name):
         #well_type = lambda orat, wrat : 'Water injector' if orat+wrat==wrat else 'Oil producer' if orat>0 else 'Undefined' 
 
         is_htab=False
-        regime_changed = False
 
         for x in lines: 
             if x == 'ENDH': 
@@ -54,7 +53,6 @@ def read_WT_hist_file(file_name):
                 oil, water, press_oil = float(words[2]), float(words[3]), float(words[4])
                 date_time = datetime.strptime(words[1], "%d.%m.%Y") + timedelta(hours=float(words[8]))
                 wcut =  water/(oil+water)
-                regime_changed = (oil+water)== (p_oil+p_water)
 
                 dP = derivative(prev_press, press_oil, prev_date_time, date_time)
                 dmix = (wcut*DWAT+(1-wcut)*DOIL)
@@ -67,15 +65,15 @@ def read_WT_hist_file(file_name):
 
 
                 #print(f"{wcut:.2f} {gauge_tvdss:.1f} {press_mix:.3f} {x}") # debug
-                print(f"{derivative(prev_press, press_oil, prev_date_time, date_time)} {wcut} {x}") # debug
-                #print(*words[0:4], press_mix, *words[5:])
+                #print(f"{derivative(prev_press, press_oil, prev_date_time, date_time)} {wcut} {x}") # debug
+                print(*words[0:4], press_mix, *words[5:])
 
                 prev_press  = press_oil
                 prev_date_time = date_time
                 prev_dmix = dmix
             else:
-                #print(x) # print other lines
-                pass
+                print(x) # print other lines
+                #pass
             
 
             if x == 'HTAB': 
