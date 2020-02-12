@@ -97,18 +97,20 @@ def read_WT_hist_file(file_name):
 
 
 
-def get_all_files1():
-    destination_folder = "wt_out"
+def process_all_files():
+    input_dir = sys.argv[1]
+    out_dir = sys.argv[1]+"_out" 
 
     for root, dirs, files in os.walk(sys.argv[1]):
+        new_structure = os.path.join(out_dir, root[len(input_dir)+1:])
+        if not os.path.isdir(new_structure): os.mkdir(new_structure)
+
         for item in files:
-            #print(os.path.join(root,item))
-            pass
+            out_file_name =  os.path.join(new_structure, item)
+            with open(out_file_name,'w') as out:
+                out.write(f"hello {out_file_name} ARRRGGGGHHH____REWRITEDDDDD_AGAIN!!!")
 
-
-#get_all_files()
-get_all_files1()
-
+process_all_files()
 #read_WT_hist_file(sys.argv[1])
 
 # TODO smooth density change when well goes to PBU/from PBU
