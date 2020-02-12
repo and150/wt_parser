@@ -1,4 +1,4 @@
-import sys, re
+import sys, re, os
 from datetime import datetime, timedelta
 
 DOIL=0.814
@@ -97,11 +97,21 @@ def read_WT_hist_file(file_name):
 
 
 
-read_WT_hist_file(sys.argv[1])
+def get_all_files1():
+    destination_folder = "wt_out"
+
+    for root, dirs, files in os.walk(sys.argv[1]):
+        for item in files:
+            #print(os.path.join(root,item))
+            pass
+
+
+#get_all_files()
+get_all_files1()
+
+#read_WT_hist_file(sys.argv[1])
 
 # TODO smooth density change when well goes to PBU/from PBU
-# TODO find out how density changes PI calculation!!
-# TODO get TVDSS for current WT (BasPro) 
-#     partly DONE(needs check)
-#     unloads odd values with wrong MD-TVDSS for PLT-tests (need test filter in oracle-query)
+# TODO find out how density influences the results of PI calculation!!
+# TODO get TVDSS for current WT (BasPro) > partly DONE(needs check) > gives odd values with wrong MD-TVDSS for PLT-tests (need test filter in oracle-query)
         
