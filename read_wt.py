@@ -1,19 +1,34 @@
 import sys, re, os
 from datetime import datetime, timedelta
 
-DOIL=0.814
-DWAT=1.059
+DOIL=0.814 # default oil density
+DWAT=1.153 # default water density 1.059
 REF =2434
 NULL = 0.01
-WCUT_TRIGGER = 0.05 # check if i have written somewhere 0.025 (PO or anywhere else)
+WCUT_TRIGGER = 0.05
 DC = 0.75 # hours for mixture separation or vice versa
+GAUGES_MD_TVDSS_FROM_DB = 'wt_gauges_MD_TVDSS'
+WATER_DENSITY_FROM_DB = 'wt_water_density'
 
 def get_gauge_tvdss_from_db_output(well_name, approximate_date): 
-    with open('wt_gauges_MD_TVDSS', 'r') as gauge_db: # DBout filename hardcoded !!
-        lines = [ [abs(datetime.strptime(y.split()[1],"%d.%m.%Y")-approximate_date), y.split()[0], y.split()[3], y.split()[4]] for y in [x.strip() for x in gauge_db] if y.split()[0]==well_name] 
+    with open(GAUGES_MD_TVDSS_FROM_DB, 'r') as db_out: # DBout filename hardcoded !!
+        lines = [ [abs(datetime.strptime(y.split()[1],"%d.%m.%Y")-approximate_date), y.split()[0], y.split()[3], y.split()[4]] for y in [x.strip() for x in db_out] if y.split()[0]==well_name] 
         filter_line = [x for x in lines if x[0] == min(map(lambda x: x[0], lines))]
         #print(filter_line) # debug
         return (float(filter_line[0][2]) ,float(filter_line[0][3])) # (gauge_md, gauge_tvdss)
+
+
+def get_water_density_from_db_output(well_name, approximate_date):
+    with open(WATER_DENSITY_FROM_DB,'r') as db_out:
+        lines = [ [abs(datetime.strptime(y.split()[1],"%d.%m.%Y")-approximate_date), y.split()[0],  y.split()[4]] for y in [x.strip() for x in db_out] if y.split()[0]==well_name] 
+        filter_line = [x for x in lines if x[0] == min(map(lambda x: x[0], lines))]
+        #print(filter_line, len(filter_line)) # debug
+        if len(filter_line) == 0:
+            return DWAT
+        else:
+            return float(filter_line[0][2])
+
+
 
 def derivative(x1, x2, t1, t2):
     dx = x2 - x1
@@ -75,7 +90,8 @@ def read_WT_hist_file(file_name):
         #print(dt_deltas)
 
         gauge_md, gauge_tvdss  = get_gauge_tvdss_from_db_output(well, dates[0]) 
-        mix_den = [(1-w)*DOIL+w*DWAT for w in wcut]
+        wat_den = get_water_density_from_db_output(well, dates[0])
+        mix_den = [(1-w)*DOIL+w*wat_den for w in wcut]
         mix_den_smooth = [x if dt==0 else x*dt/DC+mix_den[c]*(DC-dt)/DC for x,c,dt in zip(mix_den,ccc,dt_deltas)]
         bhp_mix = [p+(REF-gauge_tvdss)*9.81*(dm-DOIL)/100 if p > 0.01 else p for p,dm in zip(bhp, mix_den_smooth)]
 
@@ -97,7 +113,11 @@ def process_all_files():
 
         for item in files:
             input_file_name = os.path.join(root, item)
-            out_file_content, out_log = read_WT_hist_file(input_file_name)
+            try:
+                out_file_content, out_log = read_WT_hist_file(input_file_name)
+            except Exception as Argument:
+                log_file.write(f"{input_file_name} Error: {Argument}")
+                
             out_file_name =  os.path.join(new_structure, item)
             #print(input_file_name)
 
