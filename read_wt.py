@@ -74,7 +74,12 @@ def read_WT_hist_file(file_name):
     else:
         regime = [1 if x+y > NULL else 0 for x,y in zip(qoil, qwat) ]
         ch_moments = [0 if x==y else 1 for x,y in zip(regime, regime[1:]+[regime[-1]])]
+        pbu_moments = [0 if x==y else  1 if x==1 and y ==0 else 0   for x,y in zip(regime, regime[1:]+[regime[-1]])] # one point just before PBU
         ch_indexes = [i for i,x in enumerate(ch_moments) if x==1]  
+        #print(regime)
+        #print(ch_moments)
+        #print(pbu_moments)
+        #print(ch_indexes)
         
         cc, ccc = 0, []
         for i in enumerate(ch_moments):
@@ -91,9 +96,14 @@ def read_WT_hist_file(file_name):
 
         gauge_md, gauge_tvdss  = get_gauge_tvdss_from_db_output(well, dates[0]) 
         wat_den = get_water_density_from_db_output(well, dates[0])
-        mix_den = [(1-w)*DOIL+w*wat_den for w in wcut]
+
+        # mix density without smoothing
+        #mix_den = [(1-w)*DOIL+w*wat_den for w in wcut]
+        mix_den = [DOIL if r==1 and w!=1 else (1-w)*DOIL+w*wat_den for w,r in zip(wcut, pbu_moments)]
+        bhp_mix = [p+(REF-gauge_tvdss)*9.81*(dm-DOIL)/100 if p > 0.01 else p for p,dm in zip(bhp, mix_den)]
+        # mix density with smoothing
         mix_den_smooth = [x if dt==0 else x*dt/DC+mix_den[c]*(DC-dt)/DC for x,c,dt in zip(mix_den,ccc,dt_deltas)]
-        bhp_mix = [p+(REF-gauge_tvdss)*9.81*(dm-DOIL)/100 if p > 0.01 else p for p,dm in zip(bhp, mix_den_smooth)]
+        #bhp_mix = [p+(REF-gauge_tvdss)*9.81*(dm-DOIL)/100 if p > 0.01 else p for p,dm in zip(bhp, mix_den_smooth)]
 
         for mix_den_i, mix_den_smooth_i, dates_i, bhp_i,bhp_mix_i, wcut_i, qoil_i, qwat_i, thp_i, hours_i, dt_deltas_i in zip(mix_den, mix_den_smooth, dates, bhp, bhp_mix, wcut, qoil, qwat, thp, hours, dt_deltas):
             #recalculated_htab += f"{well} {dates_i:%d.%m.%Y %H:%M:%S} {gauge_tvdss:.2f} {wcut_i:.3f} {bhp_i:.2f} {bhp_mix_i:.2f} {mix_den_i:.3f} {mix_den_smooth_i:.3f} {dt_deltas_i:.5f}\n" # debug format

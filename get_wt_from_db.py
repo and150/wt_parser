@@ -14,7 +14,7 @@ select
     BASP_REGISTRYWELL.WELLNAME,
     TRUNC_DTBGN, 
     WTRDENSITY, 
-    WTDEN_FIX 
+    WTDEN_FIX/1000 
 from
 (select 
     IDWELL as id_well, 
