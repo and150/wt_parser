@@ -74,7 +74,7 @@ def read_WT_hist_file(file_name):
     else:
         regime = [1 if x+y > NULL else 0 for x,y in zip(qoil, qwat) ]
         ch_moments = [0 if x==y else 1 for x,y in zip(regime, regime[1:]+[regime[-1]])]
-        pbu_moments = [0 if x==y else  1 if x==1 and y ==0 else 0   for x,y in zip(regime, regime[1:]+[regime[-1]])] # one point just before PBU
+        pbu_moments = [0 if x==y else  1 if x==1 and y ==0 else 0   for x,y in zip(regime, regime[1:]+[regime[-1]])] # one point just before PBU  # TODO check SHIFT and cancel it
         ch_indexes = [i for i,x in enumerate(ch_moments) if x==1]  
         #print(regime)
         #print(ch_moments)
@@ -98,8 +98,8 @@ def read_WT_hist_file(file_name):
         wat_den = get_water_density_from_db_output(well, dates[0])
 
         # mix density without smoothing
-        #mix_den = [(1-w)*DOIL+w*wat_den for w in wcut]
-        mix_den = [DOIL if r==1 and w!=1 else (1-w)*DOIL+w*wat_den for w,r in zip(wcut, pbu_moments)]
+        mix_den = [(1-w)*DOIL+w*wat_den for w in wcut]
+        #mix_den = [DOIL if r==1 and w!=1 else (1-w)*DOIL+w*wat_den for w,r in zip(wcut, pbu_moments)] # mix with shift (one point before PBU is oil)
         bhp_mix = [p+(REF-gauge_tvdss)*9.81*(dm-DOIL)/100 if p > 0.01 else p for p,dm in zip(bhp, mix_den)]
         # mix density with smoothing
         mix_den_smooth = [x if dt==0 else x*dt/DC+mix_den[c]*(DC-dt)/DC for x,c,dt in zip(mix_den,ccc,dt_deltas)]
@@ -139,7 +139,10 @@ def process_all_files():
     log_file.write(f"\n{datetime.now()}")
     log_file.close()
 
+## batch file processing
 process_all_files()
+
+## one file test
 #output, out_log = read_WT_hist_file(sys.argv[1])
 #print(output)
 
